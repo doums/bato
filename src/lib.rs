@@ -12,7 +12,6 @@ use std::env;
 use std::fs;
 
 const SYS_PATH: &str = "/sys/class/power_supply/";
-const LOW_LEVEL: u32 = 30;
 const BAT_NAME: &str = "BAT0";
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,35 +31,44 @@ pub struct Notification {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub bat_name: String,
+    pub tick_rate: Option<u32>,
+    pub bat_name: Option<String>,
     pub low_level: u32,
+    pub critical_level: u32,
+    critical: Notification,
     low: Notification,
     full: Notification,
 }
 
 pub struct Bato {
+    bat_name: String,
     config: Config,
+    critical_notified: bool,
     low_notified: bool,
     full_notified: bool,
 }
 
-impl Bato {
+impl<'a> Bato {
     pub fn with_config(config: Config) -> Self {
+        let bat_name = if let Some(v) = &config.bat_name {
+            String::from(v)
+        } else {
+            String::from(BAT_NAME)
+        };
         Bato {
+            bat_name,
             config,
+            critical_notified: false,
             low_notified: false,
             full_notified: false,
         }
     }
 
     pub fn check(&mut self) -> Result<(), Error> {
-        let energy_full = read_and_parse(&format!(
-            "{}{}/energy_full_design",
-            SYS_PATH, self.config.bat_name
-        ))?;
-        let energy_now =
-            read_and_parse(&format!("{}{}/energy_now", SYS_PATH, self.config.bat_name))?;
-        let status = read_and_trim(&format!("{}{}/status", SYS_PATH, self.config.bat_name))?;
+        let energy_full =
+            read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.bat_name))?;
+        let energy_now = read_and_parse(&format!("{}{}/energy_now", SYS_PATH, self.bat_name))?;
+        let status = read_and_trim(&format!("{}{}/status", SYS_PATH, self.bat_name))?;
         let capacity = energy_full as u64;
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
@@ -68,9 +76,19 @@ impl Bato {
             self.low_notified = true;
             send(&self.config.low);
         }
+        if status == "Discharging"
+            && !self.critical_notified
+            && battery_level <= self.config.critical_level
+        {
+            self.critical_notified = true;
+            send(&self.config.critical);
+        }
         if status == "Full" && !self.full_notified {
             self.full_notified = true;
             send(&self.config.full);
+        }
+        if status == "Charging" && self.critical_notified {
+            self.critical_notified = false;
         }
         if status == "Charging" && self.low_notified {
             self.low_notified = false;

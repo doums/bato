@@ -1,0 +1,68 @@
+# List of all options
+
+# If the word "required" is mentioned, the corresponding option is required.
+# Otherwise it is optional.
+
+
+# # # # #
+# Root  #
+# # # # #
+
+# tick_rate: u32, default: 5
+#
+# The refresh rate in second of bato.
+#
+tick_rate: 1
+
+# bat_name: String, default: BAT0
+#
+# The battery name under /sys/class/power_supply/
+#
+bat_name: BAT1
+
+# critical_level: String, required
+#
+# The critical level of the battery, as a percentage.
+#
+critical_level: 5
+
+# low_level: String, required
+#
+# The low level of the battery, as a percentage.
+#
+low_level: 30
+
+
+# # # # # # # # #
+# notifications #
+# # # # # # # # #
+
+critical:
+low:
+full:
+
+# Takes the following options:
+
+  # summary: String, required
+  #
+  # The summary (title) of the notification.
+  #
+  summary: Critical battery level!
+
+  # body: String, default: NULL (no body)
+  #
+  # The body of the notification.
+  #
+  body: Plug the power cable asap.
+
+  # icon: String, default: NULL (no icon)
+  #
+  # The icon name of the notification.
+  #
+  name: battery-caution
+
+  # urgency: String, default: Normal for Low and Full, Critical for Critical level
+  #
+  # The urgency level of the notification.
+  #
+  urgency: Critical
