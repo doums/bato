@@ -3,7 +3,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::{Notification, Urgency};
-use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr;
 
@@ -40,23 +39,16 @@ extern "C" {
 }
 
 pub fn send(notification: &Notification) {
-    let summary = CString::new(notification.summary.clone())
-        .expect("CString::new failed")
-        .as_ptr();
     let mut body = ptr::null();
     if let Some(v) = &notification.body {
-        body = CString::new(v.clone())
-            .expect("CString::new failed")
-            .as_ptr()
+        body = v.as_ptr()
     }
     let mut icon = ptr::null();
     if let Some(v) = &notification.icon {
-        icon = CString::new(v.clone())
-            .expect("CString::new failed")
-            .as_ptr()
+        icon = v.as_ptr()
     }
     let urgency = NotifyUrgency::from(&notification.urgency);
     unsafe {
-        notify(summary, body, icon, urgency);
+        notify(notification.summary.as_ptr(), body, icon, urgency);
     }
 }

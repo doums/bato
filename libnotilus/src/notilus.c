@@ -1,10 +1,6 @@
 #include "../include/notilus.h"
 
 void notify(const char *summary, const char *body, const char *icon, NotifyUrgency urgency) {
-    printf("summary: %s\n", summary);
-    printf("body   : %s\n", body);
-    printf("icon   : %s\n", icon);
-    printf("urgency: %d\n", urgency);
     if (!notify_init("bato")) {
         fprintf(stderr, "bato error: in lib_notify, notify_init fails");
         return;

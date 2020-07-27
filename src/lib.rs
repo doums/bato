@@ -9,6 +9,7 @@ use notify::send;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::env;
+use std::ffi::CString;
 use std::fs;
 
 const SYS_PATH: &str = "/sys/class/power_supply/";
@@ -23,9 +24,9 @@ pub enum Urgency {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Notification {
-    summary: String,
-    body: Option<String>,
-    icon: Option<String>,
+    summary: CString,
+    body: Option<CString>,
+    icon: Option<CString>,
     urgency: Option<Urgency>,
 }
 
@@ -49,12 +50,21 @@ pub struct Bato {
 }
 
 impl<'a> Bato {
-    pub fn with_config(config: Config) -> Self {
+    pub fn with_config(mut config: Config) -> Self {
         let bat_name = if let Some(v) = &config.bat_name {
             String::from(v)
         } else {
             String::from(BAT_NAME)
         };
+        if let None = config.critical.urgency {
+            config.critical.urgency = Some(Urgency::Critical)
+        }
+        if let None = config.low.urgency {
+            config.low.urgency = Some(Urgency::Normal)
+        }
+        if let None = config.full.urgency {
+            config.full.urgency = Some(Urgency::Low)
+        }
         Bato {
             bat_name,
             config,
@@ -72,7 +82,11 @@ impl<'a> Bato {
         let capacity = energy_full as u64;
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        if status == "Discharging" && !self.low_notified && battery_level <= self.config.low_level {
+        if status == "Discharging"
+            && !self.low_notified
+            && battery_level <= self.config.low_level
+            && battery_level > self.config.critical_level
+        {
             self.low_notified = true;
             send(&self.config.low);
         }
@@ -96,7 +110,6 @@ impl<'a> Bato {
         if status == "Discharging" && self.full_notified {
             self.low_notified = false;
         }
-        println!("{:#?}", battery_level);
         Ok(())
     }
 }
