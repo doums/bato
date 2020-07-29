@@ -108,7 +108,7 @@ impl<'a> Bato {
             self.low_notified = false;
         }
         if status == "Discharging" && self.full_notified {
-            self.low_notified = false;
+            self.full_notified = false;
         }
         Ok(())
     }
