@@ -59,9 +59,11 @@ full:
   #
   # The icon name of the notification.
   #
-  name: battery-caution
+  icon: battery-caution
 
-  # urgency: String, default: Normal for Low and Full, Critical for Critical level
+  # urgency: String, default: Normal for low and full level, Critical for critical level
+  #
+  # enum Urgency { Low, Normal, Critical }
   #
   # The urgency level of the notification.
   #

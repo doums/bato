@@ -1,6 +1,6 @@
 ## bato
 
-Small program to send a **bat**tery n**o**tification when the level is critical, low and full. Coded in Rust (and C).
+Small program to send **bat**tery n**o**tifications when the level is critical, low and full. Coded in Rust (and C).
 
 ### features
 
