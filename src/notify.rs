@@ -6,35 +6,13 @@ use crate::{Notification, Urgency};
 use std::os::raw::c_char;
 use std::ptr;
 
-#[derive(Debug)]
-#[repr(C)]
-pub enum NotifyUrgency {
-    NOTIFY_URGENCY_LOW,
-    NOTIFY_URGENCY_NORMAL,
-    NOTIFY_URGENCY_CRITICAL,
-}
-
-impl From<&Option<Urgency>> for NotifyUrgency {
-    fn from(urgency: &Option<Urgency>) -> Self {
-        return if let Some(v) = urgency {
-            match v {
-                Urgency::Low => NotifyUrgency::NOTIFY_URGENCY_LOW,
-                Urgency::Normal => NotifyUrgency::NOTIFY_URGENCY_NORMAL,
-                Urgency::Critical => NotifyUrgency::NOTIFY_URGENCY_CRITICAL,
-            }
-        } else {
-            NotifyUrgency::NOTIFY_URGENCY_LOW
-        };
-    }
-}
-
 #[link(name = "notilus", kind = "static")]
 extern "C" {
     pub fn notify(
         summary: *const c_char,
         body: *const c_char,
         icon: *const c_char,
-        urgency: NotifyUrgency,
+        urgency: Urgency,
     );
 }
 
@@ -47,7 +25,10 @@ pub fn send(notification: &Notification) {
     if let Some(v) = &notification.icon {
         icon = v.as_ptr()
     }
-    let urgency = NotifyUrgency::from(&notification.urgency);
+    let mut urgency = Urgency::Normal;
+    if let Some(v) = &notification.urgency {
+        urgency = *v
+    }
     unsafe {
         notify(notification.summary.as_ptr(), body, icon, urgency);
     }

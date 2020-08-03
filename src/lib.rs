@@ -15,7 +15,8 @@ use std::fs;
 const SYS_PATH: &str = "/sys/class/power_supply/";
 const BAT_NAME: &str = "BAT0";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[repr(C)]
 pub enum Urgency {
     Low,
     Normal,
