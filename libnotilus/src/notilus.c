@@ -12,15 +12,12 @@ NotifyNotification *init(const char *app_name) {
 }
 
 int notify(NotifyNotification *notification, const char *summary, const char *body, const char *icon, NotifyUrgency urgency) {
-    if (!notify_notification_close(notification, NULL)) {
-        return 1;
-    }
     if (!notify_notification_update(notification, summary, body, icon)) {
-        return 2;
+        return 1;
     }
     notify_notification_set_urgency(notification, urgency);
     if (!notify_notification_show(notification, NULL)) {
-        return 3;
+        return 2;
     }
     return 0;
 }

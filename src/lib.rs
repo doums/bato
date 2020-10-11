@@ -102,6 +102,7 @@ impl<'a> Bato {
         let capacity = energy_full as u64;
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
+        self.check_status(&status);
         if status == "Discharging"
             && !self.low_notified
             && battery_level <= self.config.low_level
@@ -130,7 +131,6 @@ impl<'a> Bato {
         if status == "Discharging" && self.full_notified {
             self.full_notified = false;
         }
-        self.check_status(&status);
         self.previous_status = status;
         Ok(())
     }

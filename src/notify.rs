@@ -56,9 +56,8 @@ pub fn send(notification: *mut NotifyNotification, data: &Notification) {
         i = notify(notification, data.summary.as_ptr(), body, icon, urgency);
     }
     match i {
-        1 => eprintln!("bato error: in libnotilus, fail to close the notification"),
-        2 => eprintln!("bato error: in libnotilus, fail to update the notification"),
-        3 => eprintln!("bato error: in libnotilus, fail to show the notification"),
+        1 => eprintln!("bato error: in libnotilus, fail to update the notification"),
+        2 => eprintln!("bato error: in libnotilus, fail to show the notification"),
         _ => {}
     };
 }
