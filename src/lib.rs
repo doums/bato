@@ -64,13 +64,13 @@ impl<'a> Bato {
         } else {
             String::from(BAT_NAME)
         };
-        if let None = config.critical.urgency {
+        if config.critical.urgency.is_none() {
             config.critical.urgency = Some(Urgency::Critical)
         }
-        if let None = config.low.urgency {
+        if config.low.urgency.is_none() {
             config.low.urgency = Some(Urgency::Normal)
         }
-        if let None = config.full.urgency {
+        if config.full.urgency.is_none() {
             config.full.urgency = Some(Urgency::Low)
         }
         Bato {

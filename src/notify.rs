@@ -28,14 +28,11 @@ extern "C" {
 
 pub fn init_libnotilus(app_name: &str) -> *mut NotifyNotification {
     let notification;
+    let app_name_cstr = CString::new(app_name).expect("CString::new failed");
     unsafe {
-        notification = init(
-            CString::new(app_name)
-                .expect("CString::new failed")
-                .as_ptr(),
-        );
+        notification = init(app_name_cstr.as_ptr());
     }
-    return notification;
+    notification
 }
 
 pub fn send(notification: *mut NotifyNotification, data: &Notification) {

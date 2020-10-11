@@ -1,5 +1,3 @@
-use cmake;
-
 fn main() {
     let dst = cmake::build("libnotilus");
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
