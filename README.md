@@ -1,10 +1,17 @@
 ## bato
 
-Small program to send **bat**tery n**o**tifications when the level is critical, low and full. Coded in Rust (and C).
+Small program to send **bat**tery n**o**tifications. Coded in Rust (and C).
 
 ### features
 
-* configuration in YAML
+Configuration in YAML.
+
+Notification events:
+* level full
+* level low
+* level critical
+* charging
+* discharging
 
 ### prerequisite
 
@@ -33,6 +40,14 @@ full:
   summary: Battery full
   icon: battery-full
   urgency: Low
+charging:
+  summary: Battery
+  body: Charging
+  icon: battery-good-charging
+discharging:
+  summary: Battery
+  body: Discharging
+  icon: battery-good
 ```
 
 ### license
