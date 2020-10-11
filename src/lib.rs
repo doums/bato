@@ -95,6 +95,7 @@ impl<'a> Bato {
     }
 
     pub fn check(&mut self) -> Result<(), Error> {
+        let mut current_notification: Option<&Notification> = None;
         let energy_full =
             read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.bat_name))?;
         let energy_now = read_and_parse(&format!("{}{}/energy_now", SYS_PATH, self.bat_name))?;
@@ -102,25 +103,36 @@ impl<'a> Bato {
         let capacity = energy_full as u64;
         let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        self.check_status(&status);
+        if status == "Charging" && self.previous_status != "Charging" && !self.status_notified {
+            self.status_notified = true;
+            current_notification = Some(&self.config.charging);
+        }
+        if status == "Discharging" && self.previous_status != "Discharging" && !self.status_notified
+        {
+            self.status_notified = true;
+            current_notification = Some(&self.config.discharging);
+        }
+        if status == self.previous_status && self.status_notified {
+            self.status_notified = false;
+        }
         if status == "Discharging"
             && !self.low_notified
             && battery_level <= self.config.low_level
             && battery_level > self.config.critical_level
         {
             self.low_notified = true;
-            send(self.notification, &self.config.low);
+            current_notification = Some(&self.config.low);
         }
         if status == "Discharging"
             && !self.critical_notified
             && battery_level <= self.config.critical_level
         {
             self.critical_notified = true;
-            send(self.notification, &self.config.critical);
+            current_notification = Some(&self.config.critical);
         }
         if status == "Full" && !self.full_notified {
             self.full_notified = true;
-            send(self.notification, &self.config.full);
+            current_notification = Some(&self.config.full);
         }
         if status == "Charging" && self.critical_notified {
             self.critical_notified = false;
@@ -132,22 +144,10 @@ impl<'a> Bato {
             self.full_notified = false;
         }
         self.previous_status = status;
+        if let Some(notification) = current_notification {
+            send(self.notification, notification);
+        }
         Ok(())
-    }
-
-    pub fn check_status(&mut self, status: &str) {
-        if status == "Charging" && self.previous_status != "Charging" && !self.status_notified {
-            self.status_notified = true;
-            send(self.notification, &self.config.charging);
-        }
-        if status == "Discharging" && self.previous_status != "Discharging" && !self.status_notified
-        {
-            self.status_notified = true;
-            send(self.notification, &self.config.discharging);
-        }
-        if status == self.previous_status && self.status_notified {
-            self.status_notified = false;
-        }
     }
 
     pub fn close(&mut self) {
