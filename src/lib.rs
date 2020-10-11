@@ -5,13 +5,15 @@
 mod error;
 mod notify;
 use error::Error;
-use notify::send;
+use notify::{close_libnotilus, init_libnotilus, send, NotifyNotification};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::env;
 use std::ffi::CString;
 use std::fs;
+use std::ptr;
 
+const APP_NAME: &str = "bato";
 const SYS_PATH: &str = "/sys/class/power_supply/";
 const BAT_NAME: &str = "BAT0";
 
@@ -40,14 +42,19 @@ pub struct Config {
     critical: Notification,
     low: Notification,
     full: Notification,
+    charging: Notification,
+    discharging: Notification,
 }
 
 pub struct Bato {
     bat_name: String,
+    notification: *mut NotifyNotification,
     config: Config,
     critical_notified: bool,
     low_notified: bool,
     full_notified: bool,
+    status_notified: bool,
+    previous_status: String,
 }
 
 impl<'a> Bato {
@@ -70,9 +77,21 @@ impl<'a> Bato {
             bat_name,
             config,
             critical_notified: false,
+            notification: ptr::null_mut(),
             low_notified: false,
             full_notified: false,
+            status_notified: false,
+            previous_status: "Unknown".to_string(),
         }
+    }
+
+    pub fn start(&mut self) -> Result<(), Error> {
+        let notification = init_libnotilus(APP_NAME);
+        if notification.is_null() {
+            return Err(Error::new("libnotilus, fail to init"));
+        }
+        self.notification = notification;
+        Ok(())
     }
 
     pub fn check(&mut self) -> Result<(), Error> {
@@ -89,18 +108,18 @@ impl<'a> Bato {
             && battery_level > self.config.critical_level
         {
             self.low_notified = true;
-            send(&self.config.low);
+            send(self.notification, &self.config.low);
         }
         if status == "Discharging"
             && !self.critical_notified
             && battery_level <= self.config.critical_level
         {
             self.critical_notified = true;
-            send(&self.config.critical);
+            send(self.notification, &self.config.critical);
         }
         if status == "Full" && !self.full_notified {
             self.full_notified = true;
-            send(&self.config.full);
+            send(self.notification, &self.config.full);
         }
         if status == "Charging" && self.critical_notified {
             self.critical_notified = false;
@@ -111,7 +130,28 @@ impl<'a> Bato {
         if status == "Discharging" && self.full_notified {
             self.full_notified = false;
         }
+        self.check_status(&status);
+        self.previous_status = status;
         Ok(())
+    }
+
+    pub fn check_status(&mut self, status: &str) {
+        if status == "Charging" && self.previous_status != "Charging" && !self.status_notified {
+            self.status_notified = true;
+            send(self.notification, &self.config.charging);
+        }
+        if status == "Discharging" && self.previous_status != "Discharging" && !self.status_notified
+        {
+            self.status_notified = true;
+            send(self.notification, &self.config.discharging);
+        }
+        if status == self.previous_status && self.status_notified {
+            self.status_notified = false;
+        }
+    }
+
+    pub fn close(&mut self) {
+        close_libnotilus(self.notification)
     }
 }
 

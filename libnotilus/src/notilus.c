@@ -4,16 +4,28 @@
 
 #include "../include/notilus.h"
 
-void notify(const char *summary, const char *body, const char *icon, NotifyUrgency urgency) {
-    if (!notify_init("bato")) {
-        fprintf(stderr, "bato error: in lib_notify, notify_init fails");
-        return;
+NotifyNotification *init(const char *app_name) {
+    if (!notify_init(app_name)) {
+        return NULL;
     }
-    NotifyNotification *notification = notify_notification_new (summary, body, icon);
+    return notify_notification_new(app_name, NULL, NULL);
+}
+
+int notify(NotifyNotification *notification, const char *summary, const char *body, const char *icon, NotifyUrgency urgency) {
+    if (!notify_notification_close(notification, NULL)) {
+        return 1;
+    }
+    if (!notify_notification_update(notification, summary, body, icon)) {
+        return 2;
+    }
     notify_notification_set_urgency(notification, urgency);
     if (!notify_notification_show(notification, NULL)) {
-        fprintf(stderr, "bato error: in lib_notify, notify_notification_show fails");
+        return 3;
     }
+    return 0;
+}
+
+void uninit(NotifyNotification *notification) {
     g_object_unref(G_OBJECT(notification));
     notify_uninit();
 }

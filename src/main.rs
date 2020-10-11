@@ -21,6 +21,10 @@ fn main() -> Result<(), Error> {
         tick = Duration::from_secs(rate as u64);
     }
     let mut bato = Bato::with_config(config);
+    bato.start().unwrap_or_else(|err| {
+        eprintln!("bato error: {}", err);
+        process::exit(1);
+    });
     loop {
         bato.check().unwrap_or_else(|err| {
             eprintln!("bato error: {}", err);
@@ -28,5 +32,6 @@ fn main() -> Result<(), Error> {
         });
         thread::sleep(tick);
     }
+    bato.close();
     Ok(())
 }

@@ -40,6 +40,8 @@ low_level: 30
 critical:
 low:
 full:
+charging:
+discharging:
 
 # Takes the following options:
 
@@ -61,7 +63,7 @@ full:
   #
   icon: battery-caution
 
-  # urgency: String, default: Normal for low and full level, Critical for critical level
+  # urgency: String, default: Critical for critical level, Normal for other
   #
   # enum Urgency { Low, Normal, Critical }
   #

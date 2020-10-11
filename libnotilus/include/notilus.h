@@ -9,6 +9,8 @@
 #include <libnotify/notify.h>
 #include <libnotify/notification.h>
 
-void notify(const char *summary, const char *body, const char *icon, NotifyUrgency urgency);
+NotifyNotification *init(const char *app_name);
+int notify(NotifyNotification *notification, const char *summary, const char *body, const char *icon, NotifyUrgency urgency);
+void uninit(NotifyNotification *notification);
 
 #endif //NOTILUS_H
