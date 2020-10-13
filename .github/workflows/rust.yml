@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install libnotify
-      run: sudo apt-get install libnotify
+      run: sudo apt-get install libnotify-dev
     - name: Lint
       run: cargo clippy
     - name: Build
