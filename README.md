@@ -18,6 +18,13 @@ Notification events:
 - a notification server, like [Dunst](https://dunst-project.org/)
 - libnotify
 
+### install
+
+_Arch Linux AUR soon_
+
+Rust is a language that compiles to native code and by default statically links all dependencies.\
+Simply download the latest [release](https://github.com/doums/bato/releases) of the compiled binary and use it! (do not forget to make it executable `chmod 755 milcheck`)
+
 ### configuration
 
 The binary looks for the config file `bato.yaml` located in `$XDG_CONFIG_HOME/bato/` (default to `$HOME/.config/bato/`).\
