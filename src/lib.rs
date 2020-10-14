@@ -39,6 +39,7 @@ pub struct Config {
     pub bat_name: Option<String>,
     pub low_level: u32,
     pub critical_level: u32,
+    pub full_design: Option<bool>,
     critical: Notification,
     low: Notification,
     full: Notification,
@@ -52,6 +53,7 @@ pub struct Bato {
     config: Config,
     critical_notified: bool,
     low_notified: bool,
+    full_design: bool,
     full_notified: bool,
     status_notified: bool,
     previous_status: String,
@@ -73,11 +75,16 @@ impl<'a> Bato {
         if config.full.urgency.is_none() {
             config.full.urgency = Some(Urgency::Low)
         }
+        let mut full_design = true;
+        if let Some(v) = config.full_design {
+            full_design = v;
+        }
         Bato {
             bat_name,
             config,
             critical_notified: false,
             notification: ptr::null_mut(),
+            full_design,
             low_notified: false,
             full_notified: false,
             status_notified: false,
@@ -96,8 +103,10 @@ impl<'a> Bato {
 
     pub fn check(&mut self) -> Result<(), Error> {
         let mut current_notification: Option<&Notification> = None;
-        let energy_full =
-            read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.bat_name))?;
+        let energy_full = match self.full_design {
+            true => read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.bat_name))?,
+            false => read_and_parse(&format!("{}{}/energy_full", SYS_PATH, self.bat_name))?,
+        };
         let energy_now = read_and_parse(&format!("{}{}/energy_now", SYS_PATH, self.bat_name))?;
         let status = read_and_trim(&format!("{}{}/status", SYS_PATH, self.bat_name))?;
         let capacity = energy_full as u64;

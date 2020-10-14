@@ -32,6 +32,11 @@ critical_level: 5
 #
 low_level: 30
 
+# full_design: bool, default: true
+#
+# Whether or not the current level is calculated based on the full design value.
+#
+full_design: true
 
 # # # # # # # # #
 # notifications #
