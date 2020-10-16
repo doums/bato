@@ -22,10 +22,12 @@ Notification events:
 
 ### install
 
-_Arch Linux AUR soon_
-
 Rust is a language that compiles to native code and by default statically links all dependencies.\
 Simply download the latest [release](https://github.com/doums/bato/releases) of the compiled binary and use it! (do not forget to make it executable `chmod 755 bato`)
+
+### Arch Linux AUR package
+
+bato is present as a [package](https://aur.archlinux.org/packages/bato-bin) in the Arch User Repository.
 
 ### configuration
 
