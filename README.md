@@ -1,3 +1,5 @@
+![bato](https://github.com/doums/bato/workflows/Rust/badge.svg)
+
 ## bato
 
 Small program to send **bat**tery n**o**tifications. Coded in Rust (and C).
