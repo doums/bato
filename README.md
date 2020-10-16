@@ -4,6 +4,8 @@
 
 Small program to send **bat**tery n**o**tifications. Coded in Rust (and C).
 
+![bato](https://github.com/doums/bato/blob/master/img/bato.png)
+
 ### features
 
 Configuration in YAML.
