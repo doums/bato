@@ -16,6 +16,11 @@ use std::ptr;
 const APP_NAME: &str = "bato";
 const SYS_PATH: &str = "/sys/class/power_supply/";
 const BAT_NAME: &str = "BAT0";
+const CHARGE_PREFIX: &str = "charge";
+const ENERGY_PREFIX: &str = "energy";
+const FULL_ATTRIBUTE: &str = "full";
+const FULL_DESIGN_ATTRIBUTE: &str = "full_design";
+const NOW_ATTRIBUTE: &str = "now";
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[repr(C)]
@@ -36,10 +41,10 @@ pub struct Notification {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub tick_rate: Option<u32>,
-    pub bat_name: Option<String>,
-    pub low_level: u32,
-    pub critical_level: u32,
-    pub full_design: Option<bool>,
+    bat_name: Option<String>,
+    low_level: u32,
+    critical_level: u32,
+    full_design: Option<bool>,
     critical: Notification,
     low: Notification,
     full: Notification,
@@ -47,8 +52,9 @@ pub struct Config {
     discharging: Notification,
 }
 
-pub struct Bato {
+pub struct Bato<'a> {
     bat_name: String,
+    attribute_prefix: &'a str,
     notification: *mut NotifyNotification,
     config: Config,
     critical_notified: bool,
@@ -59,8 +65,8 @@ pub struct Bato {
     previous_status: String,
 }
 
-impl<'a> Bato {
-    pub fn with_config(mut config: Config) -> Self {
+impl<'a> Bato<'a> {
+    pub fn with_config(mut config: Config) -> Result<Self, Error> {
         let bat_name = if let Some(v) = &config.bat_name {
             String::from(v)
         } else {
@@ -79,8 +85,10 @@ impl<'a> Bato {
         if let Some(v) = config.full_design {
             full_design = v;
         }
-        Bato {
+        let attribute_prefix = find_attribute_prefix(&bat_name)?;
+        Ok(Bato {
             bat_name,
+            attribute_prefix,
             config,
             critical_notified: false,
             notification: ptr::null_mut(),
@@ -89,7 +97,7 @@ impl<'a> Bato {
             full_notified: false,
             status_notified: false,
             previous_status: "Unknown".to_string(),
-        }
+        })
     }
 
     pub fn start(&mut self) -> Result<(), Error> {
@@ -101,16 +109,21 @@ impl<'a> Bato {
         Ok(())
     }
 
+    fn attribute(&self, attribute: &str) -> Result<i32, Error> {
+        read_and_parse(&format!(
+            "{}{}/{}_{}",
+            SYS_PATH, self.bat_name, self.attribute_prefix, attribute
+        ))
+    }
+
     pub fn check(&mut self) -> Result<(), Error> {
         let mut current_notification: Option<&Notification> = None;
-        let energy_full = match self.full_design {
-            true => read_and_parse(&format!("{}{}/energy_full_design", SYS_PATH, self.bat_name))?,
-            false => read_and_parse(&format!("{}{}/energy_full", SYS_PATH, self.bat_name))?,
-        };
-        let energy_now = read_and_parse(&format!("{}{}/energy_now", SYS_PATH, self.bat_name))?;
+        let capacity = match self.full_design {
+            true => self.attribute(FULL_DESIGN_ATTRIBUTE)?,
+            false => self.attribute(FULL_ATTRIBUTE)?,
+        } as u64;
+        let energy = self.attribute(NOW_ATTRIBUTE)? as u64;
         let status = read_and_trim(&format!("{}{}/status", SYS_PATH, self.bat_name))?;
-        let capacity = energy_full as u64;
-        let energy = energy_now as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
         if status == "Charging" && self.previous_status != "Charging" && !self.status_notified {
             self.status_notified = true;
@@ -162,6 +175,41 @@ impl<'a> Bato {
     pub fn close(&mut self) {
         close_libnotilus(self.notification)
     }
+}
+
+fn find_attribute_prefix<'a, 'b>(bat_name: &'a str) -> Result<&'b str, Error> {
+    let entries: Vec<String> = fs::read_dir(format!("{}{}", SYS_PATH, bat_name))?
+        .map(|res| {
+            res.map_or("error".to_string(), |e| {
+                e.file_name().into_string().unwrap()
+            })
+        })
+        .filter(|v| v != "error")
+        .collect();
+    let energy_now_attribute = format!("{}_{}", ENERGY_PREFIX, NOW_ATTRIBUTE);
+    let energy_full_attribute = format!("{}_{}", ENERGY_PREFIX, FULL_ATTRIBUTE);
+    let energy_full_design_attribute = format!("{}_{}", ENERGY_PREFIX, FULL_DESIGN_ATTRIBUTE);
+    let charge_now_attribute = format!("{}_{}", CHARGE_PREFIX, NOW_ATTRIBUTE);
+    let charge_full_attribute = format!("{}_{}", CHARGE_PREFIX, FULL_ATTRIBUTE);
+    let charge_full_design_attribute = format!("{}_{}", CHARGE_PREFIX, FULL_DESIGN_ATTRIBUTE);
+    let mut unit = None;
+    if entries.iter().any(|v| v == &energy_now_attribute)
+        && entries.iter().any(|v| v == &energy_full_attribute)
+        && entries.iter().any(|v| v == &energy_full_design_attribute)
+    {
+        unit = Some(ENERGY_PREFIX);
+    } else if entries.iter().any(|v| v == &charge_now_attribute)
+        && entries.iter().any(|v| v == &charge_full_attribute)
+        && entries.iter().any(|v| v == &charge_full_design_attribute)
+    {
+        unit = Some(CHARGE_PREFIX);
+    }
+    unit.ok_or_else(|| {
+        Error::new(format!(
+            "unable to find the required files under {}{}",
+            SYS_PATH, BAT_NAME
+        ))
+    })
 }
 
 pub fn deserialize_config() -> Result<Config, Error> {

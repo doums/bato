@@ -20,7 +20,10 @@ fn main() -> Result<(), Error> {
     if let Some(rate) = config.tick_rate {
         tick = Duration::from_secs(rate as u64);
     }
-    let mut bato = Bato::with_config(config);
+    let mut bato = Bato::with_config(config).unwrap_or_else(|err| {
+        eprintln!("bato error: {}", err);
+        process::exit(1);
+    });
     bato.start().unwrap_or_else(|err| {
         eprintln!("bato error: {}", err);
         process::exit(1);
