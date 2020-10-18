@@ -42,6 +42,8 @@ full_design: true
 # notifications #
 # # # # # # # # #
 
+# They are all optional. If you omit one, the corresponding notification is disabled.
+
 critical:
 low:
 full:
