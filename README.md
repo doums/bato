@@ -10,6 +10,7 @@ Small program to send **bat**tery n**o**tifications. Coded in Rust (and C).
 - [prerequisite](#prerequisite)
 - [install](#install)
 - [AUR](#arch-linux-aur-package)
+- [configuration](#configuration)
 - [usage](#usage)
 - [license](#license)
 
