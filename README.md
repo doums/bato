@@ -6,6 +6,13 @@ Small program to send **bat**tery n**o**tifications. Coded in Rust (and C).
 
 ![bato](https://github.com/doums/bato/blob/master/img/bato.png)
 
+- [features](#features)
+- [prerequisite](#prerequisite)
+- [install](#install)
+- [AUR](#arch-linux-aur-package)
+- [usage](#usage)
+- [license](#license)
+
 ### features
 
 Configuration in YAML.
@@ -62,6 +69,24 @@ discharging:
   body: Discharging
   icon: battery-good
 ```
+
+### usage
+
+Run bato as a _daemon_. For example launch it from a script
+```
+#!/usr/bin/bash
+
+mapfile -t pids <<< "$(pgrep -x bato)"
+if [ "${#pids[@]}" -gt 0 ]; then
+  for pid in "${pids[@]}"; do
+    if [ -n "$pid" ]; then
+      kill "$pid"
+    fi
+  done
+fi
+bato &
+```
+and call this script from your windows manager, _autostart_ programs.
 
 ### license
 Mozilla Public License 2.0
