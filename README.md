@@ -1,4 +1,5 @@
-![bato](https://github.com/doums/bato/workflows/Rust/badge.svg)
+[![bato](https://img.shields.io/github/workflow/status/doums/bato/Rust?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=github&style=for-the-badge)](https://github.com/doums/bato/actions?query=workflow%3ARust)
+[![bato](https://img.shields.io/aur/version/bato-bin?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=arch-linux&style=for-the-badge)](https://aur.archlinux.org/packages/bato-bin/)
 
 ## bato
 
