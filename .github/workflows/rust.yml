@@ -18,7 +18,7 @@ jobs:
     - name: Lint
       run: cargo clippy
     - name: Build
-      run: cargo build --release
+      run: cargo build --release --locked
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
