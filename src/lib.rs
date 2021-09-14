@@ -2,10 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+mod battery;
 mod error;
+mod fsm;
 mod notify;
+use battery::{Data, State};
 use error::Error;
-use notify::{close_libnotilus, init_libnotilus, send, NotifyNotification};
+use fsm::Fsm;
+use notify::{close_libnotilus, init_libnotilus, NotifyNotification};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::env;
@@ -56,41 +60,53 @@ pub struct Config {
     discharging: Option<Notification>,
 }
 
-pub struct Bato {
+impl Config {
+    pub fn new() -> Result<Self, Error> {
+        let home = env::var("HOME").map_err(|err| format!("environment variable HOME, {}", err))?;
+        let config_path =
+            env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| format!("{}/.config", home));
+        let content = fs::read_to_string(format!("{}/bato/bato.yaml", config_path))
+            .map_err(|err| format!("while reading the config file, {}", err))?;
+        let config: Config = serde_yaml::from_str(&content)
+            .map_err(|err| format!("while deserializing the config file, {}", err))?;
+        Ok(config)
+    }
+
+    pub fn normalize(&mut self) -> &Self {
+        if let Some(v) = &mut self.critical {
+            if v.urgency.is_none() {
+                v.urgency = Some(Urgency::Critical)
+            }
+        }
+        if let Some(v) = &mut self.low {
+            if v.urgency.is_none() {
+                v.urgency = Some(Urgency::Normal)
+            }
+        }
+        if let Some(v) = &mut self.full {
+            if v.urgency.is_none() {
+                v.urgency = Some(Urgency::Normal)
+            }
+        }
+        self
+    }
+}
+
+pub struct Bato<'data> {
     uevent: String,
     now_attribute: String,
     full_attribute: String,
     notification: *mut NotifyNotification,
-    config: Config,
-    critical_notified: bool,
-    low_notified: bool,
-    full_notified: bool,
-    status_notified: bool,
-    previous_status: String,
+    fsm: Fsm<State, Data<'data>>,
 }
 
-impl Bato {
-    pub fn with_config(mut config: Config) -> Result<Self, Error> {
+impl<'data> Bato<'data> {
+    pub fn with_config(config: &Config) -> Result<Self, Error> {
         let bat_name = if let Some(v) = &config.bat_name {
             String::from(v)
         } else {
             String::from(BAT_NAME)
         };
-        if let Some(v) = &mut config.critical {
-            if v.urgency.is_none() {
-                v.urgency = Some(Urgency::Critical)
-            }
-        }
-        if let Some(v) = &mut config.low {
-            if v.urgency.is_none() {
-                v.urgency = Some(Urgency::Normal)
-            }
-        }
-        if let Some(v) = &mut config.full {
-            if v.urgency.is_none() {
-                v.urgency = Some(Urgency::Normal)
-            }
-        }
         let mut full_design = true;
         if let Some(v) = config.full_design {
             full_design = v;
@@ -107,13 +123,8 @@ impl Bato {
             uevent,
             now_attribute,
             full_attribute,
-            config,
-            critical_notified: false,
             notification: ptr::null_mut(),
-            low_notified: false,
-            full_notified: false,
-            status_notified: false,
-            previous_status: "Unknown".to_string(),
+            fsm: battery::create_fsm(),
         })
     }
 
@@ -152,66 +163,24 @@ impl Bato {
         Ok((now.unwrap(), full.unwrap(), status.unwrap()))
     }
 
-    pub fn check(&mut self) -> Result<(), Error> {
-        let mut current_notification: Option<&Notification> = None;
+    pub fn update(&mut self, config: &'data Config) -> Result<(), Error> {
         let (energy, capacity, status) = self.parse_attributes()?;
         let capacity = capacity as u64;
         let energy = energy as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)?;
-        if status == "Charging" && self.previous_status != "Charging" && !self.status_notified {
-            self.status_notified = true;
-            if let Some(n) = &self.config.charging {
-                current_notification = Some(n);
-            }
-        }
-        if status == "Discharging" && self.previous_status != "Discharging" && !self.status_notified
-        {
-            self.status_notified = true;
-            if let Some(n) = &self.config.discharging {
-                current_notification = Some(n);
-            }
-        }
-        if status == self.previous_status && self.status_notified {
-            self.status_notified = false;
-        }
-        if status == "Discharging"
-            && !self.low_notified
-            && battery_level <= self.config.low_level
-            && battery_level > self.config.critical_level
-        {
-            self.low_notified = true;
-            if let Some(n) = &self.config.low {
-                current_notification = Some(n);
-            }
-        }
-        if status == "Discharging"
-            && !self.critical_notified
-            && battery_level <= self.config.critical_level
-        {
-            self.critical_notified = true;
-            if let Some(n) = &self.config.critical {
-                current_notification = Some(n);
-            }
-        }
-        if status == "Full" && !self.full_notified {
-            self.full_notified = true;
-            if let Some(n) = &self.config.full {
-                current_notification = Some(n);
-            }
-        }
-        if status == "Charging" && self.critical_notified {
-            self.critical_notified = false;
-        }
-        if status == "Charging" && self.low_notified {
-            self.low_notified = false;
-        }
-        if status == "Discharging" && self.full_notified {
-            self.full_notified = false;
-        }
-        self.previous_status = status;
-        if let Some(notification) = current_notification {
-            send(self.notification, notification);
-        }
+        let mut data = Data {
+            current_level: battery_level,
+            status,
+            low_level: config.low_level,
+            critical_level: config.critical_level,
+            critical: config.critical.as_ref(),
+            low: config.low.as_ref(),
+            full: config.full.as_ref(),
+            charging: config.charging.as_ref(),
+            discharging: config.discharging.as_ref(),
+            notification: self.notification,
+        };
+        self.fsm.shift(&mut data);
         Ok(())
     }
 
@@ -273,14 +242,4 @@ fn find_attribute_prefix<'a, 'b>(path: &'a str) -> Result<&'b str, Error> {
             path
         ))
     })
-}
-
-pub fn deserialize_config() -> Result<Config, Error> {
-    let home = env::var("HOME").map_err(|err| format!("environment variable HOME, {}", err))?;
-    let config_path = env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| format!("{}/.config", home));
-    let content = fs::read_to_string(format!("{}/bato/bato.yaml", config_path))
-        .map_err(|err| format!("while reading the config file, {}", err))?;
-    let config: Config = serde_yaml::from_str(&content)
-        .map_err(|err| format!("while deserializing the config file, {}", err))?;
-    Ok(config)
 }

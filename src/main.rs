@@ -3,7 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 mod error;
-use bato::{deserialize_config, Bato};
+use bato::{Bato, Config};
 use std::io::Error;
 use std::process;
 use std::thread;
@@ -12,15 +12,16 @@ use std::time::Duration;
 const TICK_RATE: Duration = Duration::from_secs(5);
 
 fn main() -> Result<(), Error> {
-    let config = deserialize_config().unwrap_or_else(|err| {
+    let mut config = Config::new().unwrap_or_else(|err| {
         eprintln!("bato error: {}", err);
         process::exit(1);
     });
+    config.normalize();
     let mut tick = TICK_RATE;
     if let Some(rate) = config.tick_rate {
         tick = Duration::from_secs(rate as u64);
     }
-    let mut bato = Bato::with_config(config).unwrap_or_else(|err| {
+    let mut bato = Bato::with_config(&config).unwrap_or_else(|err| {
         eprintln!("bato error: {}", err);
         process::exit(1);
     });
@@ -29,7 +30,7 @@ fn main() -> Result<(), Error> {
         process::exit(1);
     });
     loop {
-        bato.check().unwrap_or_else(|err| {
+        bato.update(&config).unwrap_or_else(|err| {
             eprintln!("bato error: {}", err);
             process::exit(1);
         });
