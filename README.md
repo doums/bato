@@ -49,6 +49,7 @@ All options are detailed [here](https://github.com/doums/bato/blob/master/bato.y
 Example:
 ```yaml
 tick_rate: 1
+bat_name: BAT1
 critical_level: 5
 low_level: 30
 critical:
