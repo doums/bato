@@ -39,6 +39,27 @@ pub enum Urgency {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct NotificationConfig {
+    summary: String,
+    body: Option<String>,
+    icon: Option<String>,
+    urgency: Option<Urgency>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserConfig {
+    pub tick_rate: Option<u32>,
+    bat_name: Option<String>,
+    low_level: u32,
+    critical_level: u32,
+    full_design: Option<bool>,
+    critical: Option<NotificationConfig>,
+    low: Option<NotificationConfig>,
+    full: Option<NotificationConfig>,
+    charging: Option<NotificationConfig>,
+    discharging: Option<NotificationConfig>,
+}
+
 pub struct Notification {
     summary: CString,
     body: Option<CString>,
@@ -46,7 +67,28 @@ pub struct Notification {
     urgency: Option<Urgency>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl TryFrom<NotificationConfig> for Notification {
+    type Error = Error;
+
+    fn try_from(config: NotificationConfig) -> Result<Self, Self::Error> {
+        let summary = CString::new(config.summary).map_err(|_| "NulError")?;
+        let body = config
+            .body
+            .map(|s| CString::new(s).map_err(|_| "NulError"))
+            .transpose()?;
+        let icon = config
+            .icon
+            .map(|s| CString::new(s).map_err(|_| "NulError"))
+            .transpose()?;
+        Ok(Notification {
+            summary,
+            body,
+            icon,
+            urgency: config.urgency,
+        })
+    }
+}
+
 pub struct Config {
     pub tick_rate: Option<u32>,
     bat_name: Option<String>,
@@ -67,9 +109,31 @@ impl Config {
             env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| format!("{}/.config", home));
         let content = fs::read_to_string(format!("{}/bato/bato.yaml", config_path))
             .map_err(|err| format!("while reading the config file, {}", err))?;
-        let config: Config = serde_yaml::from_str(&content)
+        let user_config: UserConfig = serde_yaml::from_str(&content)
             .map_err(|err| format!("while deserializing the config file, {}", err))?;
-        Ok(config)
+        let critical = user_config
+            .critical
+            .map(Notification::try_from)
+            .transpose()?;
+
+        Ok(Config {
+            tick_rate: user_config.tick_rate,
+            bat_name: user_config.bat_name,
+            low_level: user_config.low_level,
+            critical_level: user_config.critical_level,
+            full_design: user_config.full_design,
+            critical,
+            low: user_config.low.map(Notification::try_from).transpose()?,
+            full: user_config.full.map(Notification::try_from).transpose()?,
+            charging: user_config
+                .charging
+                .map(Notification::try_from)
+                .transpose()?,
+            discharging: user_config
+                .discharging
+                .map(Notification::try_from)
+                .transpose()?,
+        })
     }
 
     pub fn normalize(&mut self) -> &Self {
