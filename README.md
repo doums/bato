@@ -1,9 +1,9 @@
-[![bato](https://img.shields.io/github/actions/workflow/status/doums/bato/rust.yml?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=github&style=for-the-badge)](https://github.com/doums/bato/actions?query=workflow%3ARust)
+[![bato](https://img.shields.io/github/actions/workflow/status/doums/bato/test.yml?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=github&style=for-the-badge)](https://github.com/doums/bato/actions?query=workflow%3Atest)
 [![bato](https://img.shields.io/aur/version/bato?color=0D0D0D&logoColor=BFBFBF&labelColor=404040&logo=arch-linux&style=for-the-badge)](https://aur.archlinux.org/packages/bato/)
 
 ## bato
 
-Small program to send **bat**tery n**o**tifications. Coded in Rust (and C).
+Small program to send **bat**tery n**o**tifications.
 
 ![bato](https://github.com/doums/bato/blob/master/img/bato.png)
 
@@ -15,38 +15,36 @@ Small program to send **bat**tery n**o**tifications. Coded in Rust (and C).
 - [usage](#usage)
 - [license](#license)
 
-### features
+### Features
 
 Configuration in YAML.
 
 Notification events:
-* level full
-* level low
-* level critical
-* charging
-* discharging
 
-### prerequisite
+- level full
+- level low
+- level critical
+- charging
+- discharging
+
+### Prerequisite
 
 - a notification server, like [Dunst](https://dunst-project.org/)
 - libnotify
 
-### install
+### Install
 
-Rust is a language that compiles to native code and by default statically links all dependencies.\
-Simply download the latest [release](https://github.com/doums/bato/releases) of the compiled binary and use it! (do not forget to make it executable `chmod 755 bato`)
+- latest [release](https://github.com/doums/bato/releases/latest)
+- AUR [package](https://aur.archlinux.org/packages/bato)
 
-### Arch Linux AUR package
-
-bato is present as a [package](https://aur.archlinux.org/packages/bato) in the Arch User Repository.
-
-### configuration
+### Configuration
 
 The binary looks for the config file `bato.yaml` located in `$XDG_CONFIG_HOME/bato/` (default to `$HOME/.config/bato/`).\
 If the config file is not found, bato prints an error and exits.\
 All options are detailed [here](https://github.com/doums/bato/blob/master/bato.yaml).
 
 Example:
+
 ```yaml
 tick_rate: 1
 critical_level: 5
@@ -72,9 +70,10 @@ discharging:
   icon: battery-good
 ```
 
-### usage
+### Usage
 
 Run bato as a _daemon_. For example launch it from a script
+
 ```
 #!/usr/bin/bash
 
@@ -88,7 +87,9 @@ if [ "${#pids[@]}" -gt 0 ]; then
 fi
 bato &
 ```
-and call this script from your windows manager, _autostart_ programs.
 
-### license
+Call this script from your window manager, _autostart_ programs.
+
+### License
+
 Mozilla Public License 2.0

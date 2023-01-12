@@ -1,0 +1,27 @@
+# Maintainer: Pierre Dommerc <dommerc.pierre@gmail.com>
+
+pkgname=bato
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Small program to send battery notifications'
+arch=('x86_64')
+url='https://github.com/doums/bato'
+license=('MPL2')
+depends=('libnotify')
+makedepends=('rust' 'cargo' 'cmake')
+provides=('bato')
+conflicts=('bato')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('xxx')
+
+build() {
+  cd "$pkgname-$pkgver"
+  cargo build --release --locked
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dvm 755 "target/release/bato" "$pkgdir/usr/bin/bato"
+  install -Dvm 644 "bato.yaml" "$pkgdir/usr/share/doc/bato/config/bato.yaml"
+}
+
