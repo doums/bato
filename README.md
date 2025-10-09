@@ -3,21 +3,15 @@
 
 ## bato
 
-Small program to send **bat**tery n**o**tifications.
+A daemon to send **bat**tery level n**o**tifications.
 
 ![bato](https://github.com/doums/bato/blob/master/img/bato.png)
 
-- [features](#features)
-- [prerequisite](#prerequisite)
-- [install](#install)
-- [AUR](#arch-linux-aur-package)
-- [configuration](#configuration)
-- [usage](#usage)
-- [license](#license)
+[features](#features) - [prerequisite](#prerequisite) - [install](#install) - [configuration](#configuration) - [usage](#usage) - [license](#license)
 
 ### Features
 
-Configuration in YAML.
+Tiny configuration in toml.
 
 Notification events:
 
@@ -39,56 +33,61 @@ Notification events:
 
 ### Configuration
 
-The binary looks for the config file `bato.yaml` located in `$XDG_CONFIG_HOME/bato/` (default to `$HOME/.config/bato/`).\
-If the config file is not found, bato prints an error and exits.\
-All options are detailed [here](https://github.com/doums/bato/blob/master/bato.yaml).
+The binary looks for the config file `bato.toml` located in
+`$XDG_CONFIG_HOME/bato/` (default to `$HOME/.config/bato/`).\
+If the config file is not found, bato prints an error and exits.
+
+All config options are detailed [here](https://github.com/doums/bato/blob/master/bato.toml).
 
 Example:
 
-```yaml
-tick_rate: 1
-critical_level: 5
-low_level: 30
-critical:
-  summary: Critical battery level!
-  body: Plug the power cable asap!
-  icon: battery-caution
-low:
-  summary: Battery low
-  icon: battery-040
-full:
-  summary: Battery full
-  icon: battery-full
-  urgency: Low
-charging:
-  summary: Battery
-  body: Charging
-  icon: battery-good-charging
-discharging:
-  summary: Battery
-  body: Discharging
-  icon: battery-good
+```toml
+tick_rate = 2
+critical_level = 5
+low_level = 20
+full_design = true
+
+[charging]
+summary = "Battery charging"
+icon = "battery-good-charging"
+
+[discharging]
+summary = "Battery discharging"
+icon = "battery-good"
+
+[full]
+summary = "Battery full"
+icon = "battery-full"
+
+[low]
+summary = "Battery low"
+icon = "battery-low"
+
+[critical]
+summary = "Battery critical"
+icon = "battery-caution"
+urgency = "critical"
 ```
 
 ### Usage
 
-Run bato as a _daemon_. For example launch it from a script
+Run bato via your window manager or desktop environment autostart system
 
-```
-#!/usr/bin/bash
+Example with XMonad
 
-mapfile -t pids <<< "$(pgrep -x bato)"
-if [ "${#pids[@]}" -gt 0 ]; then
-  for pid in "${pids[@]}"; do
-    if [ -n "$pid" ]; then
-      kill "$pid"
-    fi
-  done
-fi
-bato &
+```haskell
+myStartupHook = do
+    spawnOnce "dunst"
+    spawnOnce "bato -lfile"
 ```
 
-Call this script from your window manager, _autostart_ programs.
+> [!TIP]
+> By default bato logs to stdout. To log into a file
+run with `-lfile`. Logs are located in `~/.cache/bato/`
+
+```shell
+bato -h
+```
 
 ### License
 

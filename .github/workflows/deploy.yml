@@ -13,60 +13,76 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: test
+    env:
+      ARTIFACT_DIR: artifact
+    outputs:
+      sha256: ${{ steps.gen_sha256.outputs.sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Install libnotify
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install system dependencies
         run: sudo apt-get install libnotify-dev
       - name: Build
         run: cargo build --release --locked
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v3
+      - name: Prepare artifact
+        run: |
+          mkdir $ARTIFACT_DIR
+          mv -f target/release/bato $ARTIFACT_DIR/
+      - name: Gen sha256
+        id: gen_sha256
+        working-directory: ${{ env.ARTIFACT_DIR }}
+        run: |
+          sha256=$(sha256sum bato)
+          echo "$sha256"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+          echo "$sha256" > bato.sha256sum
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: bato
-          path: ./target/release/bato
+          path: ${{ env.ARTIFACT_DIR }}
+          retention-days: 2
 
-  gh-release:
-    name: Publish Github Release
+  release:
+    name: Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
       - name: Download binary artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
           name: bato
-          path: ./target/release/
-      - name: Release
-        uses: softprops/action-gh-release@v1
+      - name: Create release
+        uses: softprops/action-gh-release@v2
         with:
-          files: target/release/bato
+          files: |
+            bato
+            bato.sha256sum
 
   aur-packaging:
     name: Publish AUR package
-    needs: gh-release
+    needs: release
     runs-on: ubuntu-latest
     env:
-      PKG_NAME: bato
+      PKGNAME: bato
       PKGBUILD: ./.pkg/aur/PKGBUILD
       RELEASE_TAG: ${{ github.ref_name }}
       REPOSITORY: ${{ github.repository }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Download sources
-        run: curl -LfsSo "$PKG_NAME-$RELEASE_TAG".tar.gz "https://github.com/$REPOSITORY/archive/refs/tags/$RELEASE_TAG.tar.gz"
+        run: curl -LfsSo "$PKGNAME-$RELEASE_TAG".tar.gz "https://github.com/$REPOSITORY/archive/refs/tags/$RELEASE_TAG.tar.gz"
       - name: Update PKGBUILD
         run: ./.pkg/aur/update.sh
       - name: Show PKGBUILD
         run: cat "$PKGBUILD"
       - name: Publish
-        uses: KSXGitHub/github-actions-deploy-aur@v2.6.0
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: ${{ env.PKG_NAME }}
           pkgbuild: ${{ env.PKGBUILD }}

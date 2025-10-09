@@ -1,0 +1,49 @@
+# The tick rate, in second, at which battery info is polled
+# default: 2
+tick_rate = 2
+
+# The battery to monitor, located in `/sys/class/power_supply/<BAT_NAME>/`
+# If not provided, bato will try to find one
+# bat_name = "BAT0"
+
+# The critical level of the battery, as a percentage
+# default 5
+critical_level = 5
+
+# The low level of the battery, as a percentage
+# default 20
+low_level = 20
+
+# Whether the current level is calculated based on the full design value
+# default true
+full_design = true
+
+# # # # #
+# Notifications settings
+# If you omit one, the corresponding notification is disabled
+# They take the following parameters:
+# `summary` main notification text, oneline (required)
+# `body` optional multiline text
+# `icon` optional icon name (from a freedesktop.org-compliant icon theme)
+# `urgencey` optional urgency level, low | normal | critical
+
+[charging]
+summary = "Battery charging"
+icon = "battery-good-charging"
+
+[discharging]
+summary = "Battery discharging"
+icon = "battery-good"
+
+[full]
+summary = "Battery full"
+icon = "battery-full"
+
+[low]
+summary = "Battery low"
+icon = "battery-low"
+
+[critical]
+summary = "Battery critical"
+icon = "battery-caution"
+urgency = "critical"

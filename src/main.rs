@@ -2,40 +2,37 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-mod error;
-use bato::{Bato, Config};
-use std::io::Error;
-use std::process;
+use anyhow::{Context, Result};
+use bato::{Bato, Config, RUN, cli::Cli, signal, trace};
+use clap::Parser;
+use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
+use tracing::{debug, error, info, instrument, trace};
 
-const TICK_RATE: Duration = Duration::from_secs(5);
+#[instrument]
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+    let _g = trace::init(&cli).context("failed to init tracing")?;
+    debug!("{:?}", cli);
 
-fn main() -> Result<(), Error> {
-    let mut config = Config::new().unwrap_or_else(|err| {
-        eprintln!("bato error: {}", err);
-        process::exit(1);
-    });
-    config.normalize();
-    let mut tick = TICK_RATE;
-    if let Some(rate) = config.tick_rate {
-        tick = Duration::from_secs(rate as u64);
-    }
-    let mut bato = Bato::with_config(&config).unwrap_or_else(|err| {
-        eprintln!("bato error: {}", err);
-        process::exit(1);
-    });
-    bato.start().unwrap_or_else(|err| {
-        eprintln!("bato error: {}", err);
-        process::exit(1);
-    });
-    loop {
-        bato.update(&config).unwrap_or_else(|err| {
-            eprintln!("bato error: {}", err);
-            process::exit(1);
-        });
+    signal::catch_signals()?;
+
+    let config = Config::new()?;
+    trace!("{:#?}", config);
+    debug!("tick rate {}s", config.tick_rate);
+    let tick = Duration::from_secs(config.tick_rate as u64);
+    let mut bato = Bato::with_config(config)?;
+
+    info!("starting main loop");
+    while RUN.load(Ordering::Relaxed) {
+        trace!("tick");
+        bato.update()
+            .inspect_err(|e| {
+                error!("failed to update: {e}");
+            })
+            .ok();
         thread::sleep(tick);
     }
-    bato.close();
     Ok(())
 }
