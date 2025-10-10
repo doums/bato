@@ -21,29 +21,34 @@ full_design = true
 # # # # #
 # Notifications settings
 # If you omit one, the corresponding notification is disabled
-# They take the following parameters:
+# They take the following properties:
 # `summary` main notification text, oneline (required)
 # `body` optional multiline text
 # `icon` optional icon name (from a freedesktop.org-compliant icon theme)
 # `urgencey` optional urgency level, low | normal | critical
 
 [charging]
-summary = "Battery charging"
+summary = "Battery"
+body = "Charging"
 icon = "battery-good-charging"
 
 [discharging]
-summary = "Battery discharging"
+summary = "Battery"
+body = "Discharging"
 icon = "battery-good"
 
 [full]
-summary = "Battery full"
+summary = "Battery"
+body = "Full"
 icon = "battery-full"
 
 [low]
-summary = "Battery low"
+summary = "Battery"
+body = "Low"
 icon = "battery-low"
 
 [critical]
-summary = "Battery critical"
+summary = "Battery"
+body = "Critical!"
 icon = "battery-caution"
 urgency = "critical"

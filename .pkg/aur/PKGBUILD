@@ -3,7 +3,7 @@
 pkgname=bato
 pkgver=0.2.0
 pkgrel=1
-pkgdesc='A daemon to send battery level notifications'
+pkgdesc='A program to send battery level notifications'
 arch=('x86_64')
 url='https://github.com/doums/bato'
 license=('MPL-2.0')

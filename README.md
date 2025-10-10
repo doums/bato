@@ -3,7 +3,7 @@
 
 ## bato
 
-A daemon to send **bat**tery level n**o**tifications.
+A program to send **bat**tery level n**o**tifications
 
 ![bato](https://github.com/doums/bato/blob/master/img/bato.png)
 
@@ -13,7 +13,7 @@ A daemon to send **bat**tery level n**o**tifications.
 
 Tiny configuration in toml.
 
-Notification events:
+Desktop notification:
 
 - level full
 - level low
@@ -23,8 +23,7 @@ Notification events:
 
 ### Prerequisite
 
-- a notification server, like [Dunst](https://dunst-project.org/)
-- libnotify
+A desktop notification server, like [Dunst](https://dunst-project.org/)
 
 ### Install
 
@@ -48,23 +47,28 @@ low_level = 20
 full_design = true
 
 [charging]
-summary = "Battery charging"
+summary = "Battery"
+body = "Charging"
 icon = "battery-good-charging"
 
 [discharging]
-summary = "Battery discharging"
+summary = "Battery"
+body = "Discharging"
 icon = "battery-good"
 
 [full]
-summary = "Battery full"
+summary = "Battery"
+body = "Full"
 icon = "battery-full"
 
 [low]
-summary = "Battery low"
+summary = "Battery"
+body = "Low"
 icon = "battery-low"
 
 [critical]
-summary = "Battery critical"
+summary = "Battery"
+body = "Critical!"
 icon = "battery-caution"
 urgency = "critical"
 ```
