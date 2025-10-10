@@ -14,18 +14,8 @@ if [ -z "$PKGVER" ]; then
   exit 1
 fi
 
-if [ -z "$PKGNAME" ]; then
-  echo >&2 " ✕ PKGNAME not set"
-  exit 1
-fi
-
 if [ -z "$TARBALL" ]; then
   echo >&2 " ✕ TARBALL not set"
-  exit 1
-fi
-
-if [ -z "$RELEASE_TAG" ]; then
-  echo >&2 " ✕ RELEASE_TAG not set"
   exit 1
 fi
 
@@ -36,11 +26,6 @@ fi
 
 if ! [ -a "$TARBALL" ]; then
   echo >&2 " ✕ no such file $TARBALL"
-  exit 1
-fi
-
-if ! [[ "$RELEASE_TAG" =~ ^v.*? ]]; then
-  echo >&2  "  ✕ invalid tag $RELEASE_TAG"
   exit 1
 fi
 

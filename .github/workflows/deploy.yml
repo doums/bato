@@ -79,11 +79,12 @@ jobs:
           curl -LfsSo ${{ env.TARBALL }} "https://github.com/${{ env.REPOSITORY }}/archive/refs/tags/${{ env.RELEASE_TAG }}.tar.gz"
           mkdir tarball
           tar -xzf ${{ env.TARBALL }} -C tarball
+          mv -vf tarball/bato-* tarball/bato
       - name: Get app version
         id: app-version
         uses: nicolaiunrein/cargo-get@master
         with:
-          subcommand: package.version --entry="tarball/bato-${{ env.RELEASE_TAG }}/Cargo.toml"
+          subcommand: package.version --entry=tarball/bato/Cargo.toml
       - name: Update PKGBUILD
         env:
           PKGBUILD: ${{ env.PKGBUILD }}
@@ -94,9 +95,9 @@ jobs:
       - name: Publish
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
-          pkgname: ${{ env.PKG_NAME }}
+          pkgname: ${{ env.PKGNAME }}
           pkgbuild: ${{ env.PKGBUILD }}
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
-          commit_message: ${{ github.ref_name }}
+          commit_message: ${{ format('v{0}', steps.app-version.outputs.metadata) }}
