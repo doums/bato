@@ -22,8 +22,6 @@ jobs:
         uses: actions/checkout@v5
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-      - name: Install system dependencies
-        run: sudo apt-get install libnotify-dev
       - name: Build
         run: cargo build --release --locked
       - name: Prepare artifact
@@ -72,12 +70,24 @@ jobs:
       PKGBUILD: ./.pkg/aur/PKGBUILD
       RELEASE_TAG: ${{ github.ref_name }}
       REPOSITORY: ${{ github.repository }}
+      TARBALL: sources.tar.gz
     steps:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Download sources
-        run: curl -LfsSo "$PKGNAME-$RELEASE_TAG".tar.gz "https://github.com/$REPOSITORY/archive/refs/tags/$RELEASE_TAG.tar.gz"
+        run: |
+          curl -LfsSo ${{ env.TARBALL }} "https://github.com/${{ env.REPOSITORY }}/archive/refs/tags/${{ env.RELEASE_TAG }}.tar.gz"
+          mkdir tarball
+          tar -xzf ${{ env.TARBALL }} -C tarball
+      - name: Get app version
+        id: app-version
+        uses: nicolaiunrein/cargo-get@master
+        with:
+          subcommand: package.version --entry="tarball/bato-${{ env.RELEASE_TAG }}/Cargo.toml"
       - name: Update PKGBUILD
+        env:
+          PKGBUILD: ${{ env.PKGBUILD }}
+          PKGVER: ${{ steps.app-version.outputs.metadata }}
         run: ./.pkg/aur/update.sh
       - name: Show PKGBUILD
         run: cat "$PKGBUILD"

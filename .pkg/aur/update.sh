@@ -4,51 +4,56 @@
 
 set -e
 
-red="\e[38;5;1m"
-green="\e[38;5;2m"
-bold="\e[1m"
-reset="\e[0m"
-
 if [ -z "$PKGBUILD" ]; then
-  >&2 printf "  %b%b✕%b PKGBUILD not set\n" "$red" "$bold" "$reset"
+  echo >&2 " ✕ PKGBUILD not set"
+  exit 1
+fi
+
+if [ -z "$PKGVER" ]; then
+  echo >&2 " ✕ PKGVER not set"
   exit 1
 fi
 
 if [ -z "$PKGNAME" ]; then
-  >&2 printf "  %b%b✕%b PKGNAME not set\n" "$red" "$bold" "$reset"
+  echo >&2 " ✕ PKGNAME not set"
+  exit 1
+fi
+
+if [ -z "$TARBALL" ]; then
+  echo >&2 " ✕ TARBALL not set"
   exit 1
 fi
 
 if [ -z "$RELEASE_TAG" ]; then
-  >&2 printf "  %b%b✕%b RELEASE_TAG not set\n" "$red" "$bold" "$reset"
+  echo >&2 " ✕ RELEASE_TAG not set"
   exit 1
 fi
 
 if ! [ -a "$PKGBUILD" ]; then
-  >&2 printf "  %b%b✕%b no such file $PKGBUILD\n" "$red" "$bold" "$reset"
+  echo >&2 " ✕ no such file $PKGBUILD"
+  exit 1
+fi
+
+if ! [ -a "$TARBALL" ]; then
+  echo >&2 " ✕ no such file $TARBALL"
   exit 1
 fi
 
 if ! [[ "$RELEASE_TAG" =~ ^v.*? ]]; then
-  >&2 printf "  %b%b✕%b invalid tag $RELEASE_TAG\n" "$red" "$bold" "$reset"
+  echo >&2  "  ✕ invalid tag $RELEASE_TAG"
   exit 1
 fi
 
-pkgver="${RELEASE_TAG#v}"
-tarball="$PKGNAME-$RELEASE_TAG".tar.gz
-
-if ! [ -a "$tarball" ]; then
-  >&2 printf "  %b%b✕%b no such file $tarball\n" "$red" "$bold" "$reset"
-  exit 1
-fi
+# ⚠ Dashes are not allowed in package version, replace any - by _
+pkgver=${PKGVER//-/_}
 
 # bump package version
 sed -i "s/pkgver=.*/pkgver=$pkgver/" "$PKGBUILD"
-printf "  %b%b✓%b bump version to $RELEASE_TAG\n" "$green" "$bold" "$reset"
+echo " ✓ bump pkgver to $pkgver"
 
 # generate new checksum
-sum=$(set -o pipefail && sha256sum "$tarball" | awk '{print $1}')
+sum=$(set -o pipefail && sha256sum "$TARBALL" | awk '{print $1}')
 sed -i "s/sha256sums=('.*')/sha256sums=('$sum')/" "$PKGBUILD"
-printf "  %b%b✓%b generated checksum $sum\n" "$green" "$bold" "$reset"
+echo " ✓ updated checksums"
 
 exit 0

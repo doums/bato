@@ -2,6 +2,7 @@ name: Test
 
 on:
   workflow_call:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -20,10 +21,8 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
-      - name: Install libnotify
-        run: sudo apt-get install libnotify-dev
-      - name: Lint
+          components: rustfmt, clippy
+      - name: Clippy
         run: cargo clippy
-      - name: Check
-        run: cargo check
+      - name: Fmt
+        run: cargo fmt --check
