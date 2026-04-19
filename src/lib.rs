@@ -139,6 +139,32 @@ impl Bato {
     /// Read and parse attributes value in /sys/class/power_supply/<BAT_NAME>/uevent
     #[instrument(skip(self))]
     fn parse_attributes(&self) -> Result<(i32, i32, PsStatus)> {
+        fn parse_line<T, PARSER>(
+            pat: &str,
+            line: &str,
+            target: &mut Option<T>,
+            f: PARSER,
+        ) -> Result<()>
+        where
+            PARSER: FnOnce(&str) -> Option<T>,
+        {
+            let rhs = line
+                .split_once("=")
+                .filter(|(l, _)| **l == *pat)
+                .map(|(_, r)| r);
+
+            if let Some(r) = rhs {
+                if target.is_none() {
+                    *target = f(r);
+                    Ok(())
+                } else {
+                    bail!("found {pat} twice in battery status")
+                }
+            } else {
+                Ok(())
+            }
+        }
+
         let mut now = None;
         let mut full = None;
         let mut status = None;
@@ -146,15 +172,9 @@ impl Bato {
             .inspect_err(|e| error!("failed to read {}: {e}", self.uevent))?
             .lines()
         {
-            if now.is_none() && line.starts_with(&self.now_attribute) {
-                now = line.split('=').nth(1).and_then(|v| v.parse().ok());
-            }
-            if full.is_none() && line.starts_with(&self.full_attribute) {
-                full = line.split('=').nth(1).and_then(|v| v.parse().ok());
-            }
-            if status.is_none() && line.starts_with(STATUS_ATTRIBUTE) {
-                status = line.split('=').nth(1).map(|s| s.to_string());
-            }
+            parse_line(&self.now_attribute, line, &mut now, |v| v.parse().ok())?;
+            parse_line(&self.full_attribute, line, &mut full, |v| v.parse().ok())?;
+            parse_line(STATUS_ATTRIBUTE, line, &mut status, |s| Some(s.to_string()))?;
         }
         if now.is_none() {
             bail!("failed to parse attribute now in {}", self.uevent);
