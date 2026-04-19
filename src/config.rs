@@ -61,15 +61,17 @@ pub struct Config {
 
 impl Config {
     #[instrument]
-    pub fn new() -> anyhow::Result<Self> {
-        let home = env::var("HOME")?;
-        let mut config_dir = env::var(XDG_CONFIG_HOME)
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| Path::new(&home).join(".config"));
-        config_dir.push(APP_DIR);
-        util::check_dir_or_create(&config_dir)?;
+    pub fn new(config_path: Option<PathBuf>) -> anyhow::Result<Self> {
+        let config_file = config_path.unwrap_or({
+            let home = env::var("HOME")?;
+            let mut config_dir = env::var(XDG_CONFIG_HOME)
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| Path::new(&home).join(".config"));
+            config_dir.push(APP_DIR);
+            util::check_dir_or_create(&config_dir)?;
 
-        let config_file = config_dir.join(CONFIG_FILE);
+            config_dir.join(CONFIG_FILE)
+        });
         info!("config file: {:?}", config_file);
         let content = fs::read_to_string(&config_file).map_err(|e| {
             let error = format!(
