@@ -18,7 +18,7 @@ fn main() -> Result<()> {
 
     signal::catch_signals()?;
 
-    let config = Config::new()?;
+    let config = Config::new(cli.config)?;
     trace!("{:#?}", config);
     debug!("tick rate {}s", config.tick_rate);
     let tick = Duration::from_secs(config.tick_rate as u64);

@@ -32,8 +32,9 @@ A desktop notification server, like [Dunst](https://dunst-project.org/)
 
 ### Configuration
 
-The binary looks for the config file `bato.toml` located in
-`$XDG_CONFIG_HOME/bato/` (default to `$HOME/.config/bato/`).\
+By default, bato looks for the config file `~/.config/bato/bato.toml`
+( $XDG_CONFIG_HOME/bato/bato.toml ).\
+To use a custom file, run with the `--config` flag.\
 If the config file is not found, bato prints an error and exits.
 
 All config options are detailed [here](https://github.com/doums/bato/blob/master/bato.toml).
