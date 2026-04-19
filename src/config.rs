@@ -61,8 +61,8 @@ pub struct Config {
 
 impl Config {
     #[instrument]
-    pub fn new(config_path: Option<PathBuf>) -> anyhow::Result<Self> {
-        let config_file = config_path.unwrap_or({
+    pub fn new(path: Option<PathBuf>) -> anyhow::Result<Self> {
+        let config_file = path.unwrap_or({
             let home = env::var("HOME")?;
             let mut config_dir = env::var(XDG_CONFIG_HOME)
                 .map(PathBuf::from)
