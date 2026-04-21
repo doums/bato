@@ -38,3 +38,9 @@ impl FsmState<State, Data> for DischargingState {
         trace!("exit");
     }
 }
+
+impl std::fmt::Debug for DischargingState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "DischargingState")
+    }
+}

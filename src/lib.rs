@@ -36,6 +36,7 @@ const CONFIG_FILE: &str = "bato.toml";
 // Global application state, used to terminate the main-loop and all modules
 pub static RUN: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(true));
 
+#[derive(Debug)]
 pub struct Bato {
     uevent: String,
     now_attribute: String,
@@ -121,13 +122,10 @@ impl Bato {
             false => FULL_ATTRIBUTE,
         };
         let uevent = format!("{}{}/{}", SYS_PATH, &bat_name, UEVENT);
-        debug!("battery file {uevent}");
         let attribute_prefix = find_attribute_prefix(&uevent)?;
         debug!("found attribute prefix: {attribute_prefix}");
         let now_attribute = format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, NOW_ATTRIBUTE);
         let full_attribute = format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, full_attr);
-        debug!("now attribute: {now_attribute}");
-        debug!("full attribute: {full_attribute}");
         Ok(Bato {
             uevent,
             now_attribute,

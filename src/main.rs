@@ -23,6 +23,7 @@ fn main() -> Result<()> {
     debug!("tick rate {}s", config.tick_rate);
     let tick = Duration::from_secs(config.tick_rate as u64);
     let mut bato = Bato::with_config(config)?;
+    debug!("{:#?}", bato);
 
     info!("starting main loop");
     while RUN.load(Ordering::Relaxed) {

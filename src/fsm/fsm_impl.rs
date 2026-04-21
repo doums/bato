@@ -70,7 +70,7 @@ impl From<&str> for PsStatus {
             "discharging" => PsStatus::Discharging,
             "not charging" => PsStatus::NotCharging,
             _ => {
-                warn!("unknow status {value}");
+                warn!("unknown status {value}");
                 PsStatus::Unknown
             }
         }

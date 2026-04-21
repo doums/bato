@@ -34,3 +34,9 @@ impl FsmState<State, Data> for CriticalState {
         trace!("exit");
     }
 }
+
+impl std::fmt::Debug for CriticalState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "CriticalState")
+    }
+}

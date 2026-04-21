@@ -35,3 +35,9 @@ impl FsmState<State, Data> for LowState {
         trace!("exit");
     }
 }
+
+impl std::fmt::Debug for LowState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LowState")
+    }
+}

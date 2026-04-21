@@ -8,6 +8,7 @@ use tracing::{debug, info, instrument};
 
 pub type StateMap<K, D> = HashMap<K, Box<dyn FsmState<K, D>>>;
 
+#[derive(Debug)]
 pub struct Fsm<K, D>
 where
     K: Eq + Hash + Display + Debug,
@@ -53,7 +54,7 @@ where
     }
 }
 
-pub trait FsmState<K, D>
+pub trait FsmState<K, D>: Debug
 where
     K: Eq + Hash,
 {

@@ -31,3 +31,9 @@ impl FsmState<State, Data> for NotChargingState {
         trace!("exit");
     }
 }
+
+impl std::fmt::Debug for NotChargingState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NotChargingState")
+    }
+}
