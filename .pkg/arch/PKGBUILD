@@ -14,15 +14,16 @@ conflicts=('bato')
 options=(!debug)
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('xxx')
+_pkgdir="$pkgname-$pkgver"
 
 build() {
-  cd "$pkgname-$pkgver"
+  cd "$srcdir/$_pkgdir"
   cargo build --release --locked
 }
 
 package() {
-  cd "$pkgname-$pkgver"
-  install -Dm755 "target/release/bato" "$pkgdir/usr/bin/bato"
-  install -Dm644 "bato.toml" "$pkgdir/usr/share/bato/bato.toml"
+  cd "$srcdir/$_pkgdir"
+  install -Dm755 "$srcdir/$_pkgdir/target/release/bato" "$pkgdir/usr/bin/bato"
+  install -Dm644 "$srcdir/$_pkgdir/bato.toml" "$pkgdir/usr/share/bato/bato.toml"
 }
 
