@@ -144,24 +144,50 @@ impl Bato {
             .inspect_err(|e| error!("failed to read {}: {e}", self.uevent))?
             .lines()
         {
-            if now.is_none() && line.starts_with(&self.now_attribute) {
-                now = line.split('=').nth(1).and_then(|v| v.parse().ok());
+            let Some((key, value)) = line.split_once('=') else {
+                continue;
+            };
+            if now.is_none() && key == self.now_attribute {
+                now = Some(
+                    value
+                        .parse()
+                        .map_err(|e| anyhow!("failed to parse value for {key}: {e}"))?,
+                )
             }
-            if full.is_none() && line.starts_with(&self.full_attribute) {
-                full = line.split('=').nth(1).and_then(|v| v.parse().ok());
+            if full.is_none() && key == self.full_attribute {
+                full = Some(
+                    value
+                        .parse()
+                        .map_err(|e| anyhow!("failed to parse value for {key}: {e}"))?,
+                )
             }
-            if status.is_none() && line.starts_with(STATUS_ATTRIBUTE) {
-                status = line.split('=').nth(1).map(|s| s.to_string());
+            if status.is_none() && key == STATUS_ATTRIBUTE {
+                status = Some(value.to_string());
+            }
+            if now.is_some() && full.is_some() && status.is_some() {
+                break;
             }
         }
         if now.is_none() {
-            bail!("failed to parse attribute now in {}", self.uevent);
+            bail!(
+                "attribute '{}' not found in {}",
+                self.now_attribute,
+                self.uevent
+            );
         }
         if full.is_none() {
-            bail!("failed to parse attribute full in {}", self.uevent);
+            bail!(
+                "attribute '{}' not found in {}",
+                self.full_attribute,
+                self.uevent
+            );
         }
         if status.is_none() {
-            bail!("failed to parse attribute status in {}", self.uevent);
+            bail!(
+                "attribute '{}' not found in {}",
+                STATUS_ATTRIBUTE,
+                self.uevent
+            );
         }
         Ok((now.unwrap(), full.unwrap(), status.unwrap().as_str().into()))
     }
