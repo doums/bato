@@ -3,12 +3,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use anyhow::{Context, Result};
-use bato::{Bato, Config, RUN, cli::Cli, signal, trace};
+use bato::{Bato, Config, cli::Cli, signal, trace};
 use clap::Parser;
-use std::sync::atomic::Ordering;
-use std::thread;
 use std::time::Duration;
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, instrument, trace};
 
 #[instrument]
 fn main() -> Result<()> {
@@ -25,15 +23,7 @@ fn main() -> Result<()> {
     let mut bato = Bato::with_config(config)?;
     debug!("{:#?}", bato);
 
-    info!("starting main loop");
-    while RUN.load(Ordering::Relaxed) {
-        trace!("tick");
-        bato.update()
-            .inspect_err(|e| {
-                error!("failed to update: {e}");
-            })
-            .ok();
-        thread::sleep(tick);
-    }
+    bato.run(tick)?;
+
     Ok(())
 }

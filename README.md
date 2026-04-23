@@ -33,16 +33,21 @@ A desktop notification server, like [Dunst](https://dunst-project.org/)
 ### Configuration
 
 By default, bato looks for the config file `~/.config/bato/bato.toml`
-(XDG_CONFIG_HOME).\
+(XDG dir spec).\
 To use a custom file, run with the `--config` flag.\
 If the config file is not found or invalid, bato prints an error and exits.
 
 All config options are detailed [here](https://github.com/doums/bato/blob/master/bato.toml).
 
+> [!TIP]
+> Keep `tick_rate` low to save battery. Bato uses udev to listen
+> to AC events,\
+> so it notifies _instantly_ on charger plug/unplug.
+
 Example:
 
 ```toml
-tick_rate = 2
+tick_rate = 30 # sec
 critical_level = 5
 low_level = 20
 full_design = true

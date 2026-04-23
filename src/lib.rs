@@ -11,15 +11,18 @@ mod util;
 
 use anyhow::{Context, Result, anyhow, bail};
 use fsm::{Data, Fsm, PsStatus, State};
+use mio::{Events, Interest, Poll, Token};
 use once_cell::sync::Lazy;
 use std::convert::TryFrom;
 use std::fs::{self, DirEntry};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 pub use crate::config::Config;
 use crate::config::Notification;
 
+const UDEV_SUBSYSTEM: &str = "power_supply";
 const SYS_PATH: &str = "/sys/class/power_supply/";
 const UEVENT: &str = "uevent";
 const POWER_SUPPLY: &str = "POWER_SUPPLY";
@@ -29,6 +32,7 @@ const FULL_ATTRIBUTE: &str = "FULL";
 const FULL_DESIGN_ATTRIBUTE: &str = "FULL_DESIGN";
 const NOW_ATTRIBUTE: &str = "NOW";
 const STATUS_ATTRIBUTE: &str = "POWER_SUPPLY_STATUS";
+const ONLINE_ATTRIBUTE: &str = "POWER_SUPPLY_ONLINE";
 const XDG_CONFIG_HOME: &str = "XDG_CONFIG_HOME";
 const APP_DIR: &str = "bato";
 const CONFIG_FILE: &str = "bato.toml";
@@ -38,6 +42,8 @@ pub static RUN: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(true));
 
 #[derive(Debug)]
 pub struct Bato {
+    #[allow(dead_code)]
+    bat_name: String,
     uevent: String,
     now_attribute: String,
     full_attribute: String,
@@ -127,6 +133,7 @@ impl Bato {
         let now_attribute = format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, NOW_ATTRIBUTE);
         let full_attribute = format!("{}_{}_{}", POWER_SUPPLY, attribute_prefix, full_attr);
         Ok(Bato {
+            bat_name,
             uevent,
             now_attribute,
             full_attribute,
@@ -192,13 +199,79 @@ impl Bato {
         Ok((now.unwrap(), full.unwrap(), status.unwrap().as_str().into()))
     }
 
-    #[instrument(skip_all)]
-    pub fn update(&mut self) -> Result<()> {
-        let (energy, capacity, status) = self.parse_attributes().context("parse attribute")?;
+    pub fn run(&mut self, tick: Duration) -> Result<()> {
+        let mut poll = Poll::new()?;
+        let mut events = Events::with_capacity(128);
+        const MONITOR: Token = Token(0);
+
+        let mut socket = udev::MonitorBuilder::new()?
+            .match_subsystem(UDEV_SUBSYSTEM)?
+            .listen()?;
+
+        poll.registry()
+            .register(&mut socket, MONITOR, Interest::READABLE)?;
+
+        // initial update
+        self.update(None)
+            .inspect_err(|e| error!("failed to update: {e}"))
+            .ok();
+
+        while RUN.load(Ordering::Relaxed) {
+            poll.poll(&mut events, Some(tick))?;
+
+            if events.is_empty() {
+                // poll timeout -> no event, just update
+                trace!("tick");
+                self.update(None)
+                    .inspect_err(|e| error!("failed to update: {e}"))
+                    .ok();
+            } else if events
+                .iter()
+                .any(|e| e.token() == MONITOR && e.is_readable())
+            {
+                let ac_online = socket
+                    .iter()
+                    .filter(|e| e.sysname() == "AC")
+                    .inspect(|_| info!("AC udev event"))
+                    .find_map(|e| {
+                        e.property_value(ONLINE_ATTRIBUTE)
+                            .and_then(|v| v.to_str())
+                            .and_then(|v| match v {
+                                "1" => Some(true),
+                                "0" => Some(false),
+                                _ => None,
+                            })
+                    });
+
+                if let Some(ac) = ac_online {
+                    debug!("AC online: {}", ac);
+                    self.update(Some(ac))
+                        .inspect_err(|e| error!("failed to update: {e}"))
+                        .ok();
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub fn update(&mut self, uevent_ac: Option<bool>) -> Result<()> {
+        let (energy, capacity, sysfs_status) =
+            self.parse_attributes().context("parse attribute")?;
+        trace!("sysfs status {}", sysfs_status.as_ref());
         let capacity = capacity as u64;
         let energy = energy as u64;
         let battery_level = u32::try_from(100_u64 * energy / capacity)
             .context("failed to calculate battery level")?;
+        // When AC uevent fires (AC is plugged or unplugged),
+        // sysfs is laggy and still not refreshed by driver/kernel.
+        // Pre-shot battery switch on Charging/Discharging state.
+        let status = uevent_ac
+            .map(|ac| match ac {
+                true => PsStatus::Charging,
+                false => PsStatus::Discharging,
+            })
+            .unwrap_or(sysfs_status);
         let data = Data {
             current_level: battery_level,
             status,

@@ -1,6 +1,6 @@
 # The tick rate, in second, at which battery info is polled
-# default: 2
-tick_rate = 2
+# default: 30
+tick_rate = 30
 
 # The battery to monitor, located in `/sys/class/power_supply/<BAT_NAME>/`
 # If not provided, bato will try to find one

@@ -1,6 +1,6 @@
 [package]
 name = "bato"
-version = "0.2.2"
+version = "0.3.0"
 description = "A program to send battery level notifications"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2024"
@@ -20,6 +20,8 @@ signal-hook = "0.4"
 once_cell = "1.21"
 notify-rust = "4.11"
 strum = { version = "0.28", features = ["derive"] }
+udev = { version = "0.9.3", features = ["mio"]}
+mio = { version = "1.2.0", features = ["os-poll"] }
 
 [profile.release]
 codegen-units = 1

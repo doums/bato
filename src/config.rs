@@ -10,7 +10,7 @@ use tracing::{error, info, instrument};
 
 use crate::{APP_DIR, CONFIG_FILE, XDG_CONFIG_HOME, util};
 
-const DEFAULT_TICK_RATE: u32 = 2;
+const DEFAULT_TICK_RATE: u32 = 30;
 const DEFAULT_LOW_LEVEL: u32 = 20;
 const DEFAULT_CRITICAL_LEVEL: u32 = 5;
 const DEFAULT_FULL_DESIGN: bool = true;
