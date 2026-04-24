@@ -15,6 +15,7 @@ use mio::{Events, Interest, Poll, Token};
 use once_cell::sync::Lazy;
 use std::convert::TryFrom;
 use std::fs::{self, DirEntry};
+use std::io::ErrorKind;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tracing::{debug, error, info, instrument, trace, warn};
@@ -199,6 +200,7 @@ impl Bato {
         Ok((now.unwrap(), full.unwrap(), status.unwrap().as_str().into()))
     }
 
+    #[instrument(skip(self))]
     pub fn run(&mut self, tick: Duration) -> Result<()> {
         let mut poll = Poll::new()?;
         let mut events = Events::with_capacity(128);
@@ -217,7 +219,19 @@ impl Bato {
             .ok();
 
         while RUN.load(Ordering::Relaxed) {
-            poll.poll(&mut events, Some(tick))?;
+            match poll.poll(&mut events, Some(tick)) {
+                Ok(_) => {}
+                Err(e) if e.kind() == ErrorKind::Interrupted => {
+                    // when laptop goes into sleep poll exits with Interrupted
+                    // → retry
+                    debug!("poll interrupted, retrying");
+                    continue;
+                }
+                Err(e) => {
+                    error!("poll error: {}", e);
+                    bail!("poll error: {}", e);
+                }
+            }
 
             if events.is_empty() {
                 // poll timeout -> no event, just update

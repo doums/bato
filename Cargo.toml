@@ -1,6 +1,6 @@
 [package]
 name = "bato"
-version = "0.3.0"
+version = "0.3.1"
 description = "A program to send battery level notifications"
 authors = ["pierre <dommerc.pierre@gmail.com>"]
 edition = "2024"
